@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BlackBear Admin | Print System</title>
+    
+    <!-- Fonts: Noto Naskh Arabic -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #c2934f;
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --text-light: #e0e0e0;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --sidebar-width: 260px;
+        }
+
+        /* Ghorina Font bo Noto Naskh Arabic */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Naskh Arabic', serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background-color: var(--bg-dark); color: var(--text-light); min-height: 100vh; display: flex; overflow-x: hidden; }
+
+        /* --- LOGIN --- */
+        #login-overlay {
+            position: fixed; inset: 0; z-index: 9999; background: #000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-box {
+            background: var(--bg-panel); padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 350px; text-align: center; border-top: 4px solid var(--primary);
+        }
+        .inp { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; text-align: center; }
+        
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width); background: var(--bg-panel); height: 100vh;
+            position: fixed; right: 0; top: 0; z-index: 100; border-left: 1px solid #333;
+            display: flex; flex-direction: column; transition: 0.3s;
+        }
+        .brand { padding: 20px; text-align: center; border-bottom: 1px solid #333; }
+        .brand h2 { color: var(--primary); font-weight: 900; }
+        
+        .menu-btn {
+            width: 100%; padding: 15px 20px; background: none; border: none;
+            color: #aaa; text-align: right; font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; gap: 15px; transition: 0.2s;
+        }
+        .menu-btn.active, .menu-btn:hover { background: rgba(194,147,79,0.1); color: var(--primary); border-right: 4px solid var(--primary); }
+
+        /* Format Button Style */
+        #btn-format-container {
+            margin-top: auto; 
+            padding: 20px;
+            border-top: 1px solid #333;
+        }
+        .btn-format {
+            background: #4a0000; color: #ff5555; width: 100%; border: 1px solid #ff5555;
+            padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold;
+        }
+        .btn-format:hover { background: #ff0000; color: #fff; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-right: var(--sidebar-width); width: calc(100% - var(--sidebar-width));
+            padding: 20px; transition: 0.3s;
+        }
+        
+        /* Top Bar (Mobile) */
+        .top-bar {
+            display: none; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #333;
+        }
+        .hamburger { font-size: 1.5rem; cursor: pointer; padding: 5px; }
+
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: var(--bg-panel); padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .card h3 { font-size: 2rem; margin: 5px 0; }
+        .card p { color: #888; font-size: 0.8rem; }
+
+        /* Controls */
+        .controls { background: var(--bg-panel); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-dark { background: #000; color: #fff; border: 1px solid #333; }
+
+        /* Table */
+        .table-wrapper { background: var(--bg-panel); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #333; }
+        th { background: #252525; color: var(--primary); font-size: 0.9rem; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; }
+        .b-new { background: rgba(46,204,113,0.15); color: var(--success); }
+        .b-used { background: rgba(231,76,60,0.15); color: var(--danger); }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(100%); }
+            .sidebar.open { transform: translateX(0); box-shadow: -10px 0 50px rgba(0,0,0,0.5); }
+            .main-content { margin-right: 0; width: 100%; }
+            .top-bar { display: flex; }
+            
+            thead { display: none; }
+            tr { display: block; border-bottom: 1px solid #444; padding: 15px; }
+            td { display: flex; justify-content: space-between; padding: 5px 0; border: none; }
+            td::before { content: attr(data-label); color: #888; font-size: 0.9rem; }
+        }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+                position: absolute; left: 0; top: 0; width: 100%;
+                background: #fff; color: #000;
+                display: flex; flex-wrap: wrap; justify-content: center;
+            }
+            .ticket {
+                width: 300px;
+                border: 2px dashed #000;
+                margin: 10px; padding: 20px;
+                text-align: center;
+                page-break-inside: avoid;
+                display: flex; flex-direction: column; align-items: center;
+            }
+            .ticket h2 { margin: 0; font-size: 1.2rem; font-weight: 900; }
+            .qr-box { margin: 15px 0; }
+            .secret-code {
+                background: #000; color: #fff;
+                padding: 5px 15px; border-radius: 5px;
+                font-family: monospace; font-size: 1.5rem; font-weight: bold;
+                margin-top: 10px; letter-spacing: 2px;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 1. LOGIN -->
+<div id="login-overlay">
+    <div class="login-box">
+        <h2>🐻 BlackBear Admin</h2>
+        <input type="password" id="adminPass" class="inp" placeholder="پەیڤا نهێنی">
+        <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="login()">چوونە ژوور</button>
+        <p id="errorMsg" style="color:red; margin-top:10px;"></p>
+    </div>
+</div>
+
+<!-- 2. SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="brand">
+        <h2>BLACKBEAR</h2>
+        <p style="font-size:0.8rem; color:#666;">Lucky Wheel Panel</p>
+    </div>
+    <div style="padding:20px;">
+        <button class="menu-btn active" onclick="showTab('dashboard')"><i class="fas fa-chart-pie"></i> داشبۆرد</button>
+        <button class="menu-btn" onclick="showTab('codes')"><i class="fas fa-qrcode"></i> کۆد و پرێنت</button>
+        <button class="menu-btn" onclick="openGen()"><i class="fas fa-plus-circle"></i> دروستکرن</button>
+        <button class="menu-btn" style="color:var(--danger); margin-top:20px;" onclick="location.reload()"><i class="fas fa-sign-out-alt"></i> دەرکەفتن</button>
+    </div>
+
+    <!-- FORMAT BUTTON (Hidden by default) -->
+    <div id="btn-format-container" style="display:none;">
+        <button class="btn-format" onclick="formatSystem()">
+            <i class="fas fa-exclamation-triangle"></i> فۆرماتکرن (سڕینەوە)
+        </button>
+        <p style="font-size:0.7rem; color:#666; margin-top:5px; text-align:center;">ئەڤ دوگمە تەنها جارەکێ دیار دبیت</p>
+    </div>
+</div>
+
+<!-- 3. MAIN CONTENT -->
+<div class="main-content">
+    <div class="top-bar">
+        <i class="fas fa-bars hamburger" onclick="toggleSidebar()"></i>
+        <h4>Admin Panel</h4>
+        <div></div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard">
+        <div class="stats-grid">
+            <div class="card">
+                <h3 id="st-total" style="color:#fff">0</h3>
+                <p>هەموو کۆد</p>
+            </div>
+            <div class="card">
+                <h3 id="st-active" style="color:var(--success)">0</h3>
+                <p>بەردەست (نوی)</p>
+            </div>
+            <div class="card">
+                <h3 id="st-used" style="color:var(--danger)">0</h3>
+                <p>بکارهاتی</p>
+            </div>
+        </div>
+        
+        <h3 style="margin:20px 0;">دوماهیک براوە (Last Winners)</h3>
+        <div class="table-wrapper">
+            <table id="recentTable"></table>
+        </div>
+    </div>
+
+    <!-- CODES TAB -->
+    <div id="tab-codes" style="display:none;">
+        <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #444;">
+            <label style="color:#aaa; font-size:0.9rem;">لینکێ وێبسایتی (بۆ بارکۆدی):</label>
+            <input type="text" id="gameUrl" class="inp" style="text-align:left; direction:ltr;" value="https://blackbear-game.web.app" placeholder="https://...">
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="openGen()"><i class="fas fa-plus"></i> نوی</button>
+            <button class="btn btn-dark" onclick="printAllNew()"><i class="fas fa-print"></i> چاپکرنا هەموو نویان</button>
+            <input type="text" id="search" class="inp" style="width:auto; margin:0;" placeholder="لێگەڕیان..." onkeyup="renderMainTable()">
+        </div>
+
+        <div class="table-wrapper">
+            <table id="mainTable">
+                <thead>
+                    <tr>
+                        <th>کۆد</th>
+                        <th>ڕەوش</th>
+                        <th>خەلات</th>
+                        <th>کریار</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- GENERATE MODAL -->
+<div id="genModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200; align-items:center; justify-content:center;">
+    <div class="login-box">
+        <h3>دروستکرن</h3>
+        <input type="text" id="gPrefix" class="inp" placeholder="پێشگر (VIP)" value="BB">
+        <input type="number" id="gCount" class="inp" placeholder="ژمارە" value="10">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="generate()">دروست بکە</button>
+            <button class="btn btn-dark" style="flex:1; justify-content:center;" onclick="document.getElementById('genModal').style.display='none'">گرتن</button>
+        </div>
+    </div>
+</div>
+
+<!-- HIDDEN PRINT AREA -->
+<div id="print-area"></div>
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // --- 1. CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCWs-syIgGL4f7fNZA6JdU7fgSD9S3a37U",
+        authDomain: "blackbearcoffe-808e0.firebaseapp.com",
+        projectId: "blackbearcoffe-808e0",
+        storageBucket: "blackbearcoffe-808e0.firebasestorage.app",
+        messagingSenderId: "78694014274",
+        appId: "1:78694014274:web:a1b763554cbdc807f83cdb",
+        measurementId: "G-NM3HLS4W2T"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let allData = [];
+
+    // --- 2. AUTH & UI ---
+    function login() {
+        if(document.getElementById('adminPass').value === "admin123") {
+            document.getElementById('login-overlay').style.display = "none";
+            initData();
+            checkFormatStatus(); // Check if format button should show
+        } else {
+            document.getElementById('errorMsg').innerText = "شفرە خەلەتە";
+        }
+    }
+
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        sb.classList.toggle('open');
+    }
+
+    function showTab(id) {
+        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        document.getElementById('tab-dashboard').style.display = 'none';
+        document.getElementById('tab-codes').style.display = 'none';
+        document.getElementById('tab-'+id).style.display = 'block';
+        if(window.innerWidth < 900) toggleSidebar();
+    }
+
+    function openGen() { document.getElementById('genModal').style.display='flex'; }
+
+    // --- 3. DATA LOGIC ---
+    function initData() {
+        db.collection('codes').orderBy('createdAt', 'desc').onSnapshot(snap => {
+            allData = [];
+            let used = 0;
+            snap.forEach(d => {
+                const obj = d.data(); obj.id = d.id;
+                allData.push(obj);
+                if(obj.used) used++;
+            });
+
+            // Stats
+            document.getElementById('st-total').innerText = allData.length;
+            document.getElementById('st-used').innerText = used;
+            document.getElementById('st-active').innerText = allData.length - used;
+
+            renderMainTable();
+            renderRecent();
+        });
+    }
+
+    // --- FORMAT / DELETE ALL LOGIC ---
+    // This checks if the system has been formatted before
+    function checkFormatStatus() {
+        db.collection('settings').doc('system_status').get().then(doc => {
+            // If the document does NOT exist, or 'formatted' is false, show the button
+            if(!doc.exists || !doc.data().formatted) {
+                document.getElementById('btn-format-container').style.display = 'block';
+            }
+        });
+    }
+
+    async function formatSystem() {
+        if(!confirm("⚠️ ئاگەهداربە!\nئەڤە دێ هەموو داتایان ژێبەت (Delete All).\nدڵنیای؟")) return;
+        
+        const btnContainer = document.getElementById('btn-format-container');
+        btnContainer.innerHTML = '<p style="color:yellow; text-align:center;">خەریکە...</p>';
+
+        try {
+            // 1. Get all codes
+            const snap = await db.collection('codes').get();
+            const batchSize = 400; // Firestore limit is 500
+            let batch = db.batch();
+            let count = 0;
+
+            // 2. Add deletes to batch
+            for (const doc of snap.docs) {
+                batch.delete(doc.ref);
+                count++;
+                if (count >= batchSize) {
+                    await batch.commit();
+                    batch = db.batch();
+                    count = 0;
+                }
+            }
+            if (count > 0) {
+                await batch.commit();
+            }
+
+            // 3. Mark as formatted (So button never comes back)
+            await db.collection('settings').doc('system_status').set({
+                formatted: true,
+                formattedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // 4. Hide button permanently
+            btnContainer.style.display = 'none';
+            alert("✅ سەرکەفت! هەموو داتا هاتنە سڕینەوە.");
+
+        } catch (error) {
+            console.error(error);
+            alert("خەلەتەک پەیدا بوو: " + error.message);
+            location.reload();
+        }
+    }
+
+    function renderMainTable() {
+        const search = document.getElementById('search').value.toUpperCase();
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = "";
+
+        allData.forEach(item => {
+            if(!item.id.includes(search)) return;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td data-label="کۆد" style="font-family:monospace; font-size:1.1rem; letter-spacing:1px;">${item.id}</td>
+                <td data-label="ڕەوش">${item.used ? '<span class="badge b-used">بکارهاتی</span>' : '<span class="badge b-new">نوی</span>'}</td>
+                <td data-label="خەلات" style="color:var(--primary); font-weight:bold;">${item.prize || '-'}</td>
+                <td data-label="کریار">
+                    <button class="btn btn-dark" style="padding:5px 10px;" onclick="printOne('${item.id}')"><i class="fas fa-print"></i></button>
+                    <button class="btn btn-dark" style="padding:5px 10px; border-color:red; color:red;" onclick="del('${item.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderRecent() {
+        const tbl = document.getElementById('recentTable');
+        const winners = allData.filter(d => d.used).slice(0, 5);
+        if(winners.length === 0) { tbl.innerHTML = "<tr><td style='text-align:center'>...</td></tr>"; return; }
+        
+        let html = `<thead><tr><th>کۆد</th><th>خەلات</th><th>کات</th></tr></thead><tbody>`;
+        winners.forEach(w => {
+            let t = w.timestamp ? w.timestamp.toDate().toLocaleTimeString('ku') : '-';
+            html += `<tr><td>${w.id}</td><td style="color:var(--primary)">${w.prize}</td><td dir="ltr" style="color:#777">${t}</td></tr>`;
+        });
+        tbl.innerHTML = html + "</tbody>";
+    }
+
+    // --- 4. GENERATOR ---
+    function generate() {
+        const pre = document.getElementById('gPrefix').value.toUpperCase();
+        const count = parseInt(document.getElementById('gCount').value);
+        const batch = db.batch();
+        
+        for(let i=0; i<count; i++) {
+            let rand = Math.floor(Math.random()*9000)+1000;
+            let id = `${pre}-${rand}`;
+            batch.set(db.collection('codes').doc(id), {
+                used: false, prize: null, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        batch.commit().then(() => {
+            alert("تم!");
+            document.getElementById('genModal').style.display='none';
+        });
+    }
+    function del(id) { if(confirm('Delete?')) db.collection('codes').doc(id).delete(); }
+
+    // --- 5. PRINT SYSTEM ---
+    function createTicketHTML(codeId) {
+        const gameUrl = document.getElementById('gameUrl').value;
+        const container = document.createElement('div');
+        container.className = 'ticket';
+        
+        const header = document.createElement('div');
+        header.innerHTML = `
+            <div style="font-size:2rem;">🐻</div>
+            <h2>BLACKBEAR</h2>
+            <p>SCAN TO PLAY</p>
+        `;
+        container.appendChild(header);
+
+        const qrBox = document.createElement('div');
+        qrBox.className = 'qr-box';
+        container.appendChild(qrBox);
+
+        const codeTxt = document.createElement('div');
+        codeTxt.className = 'secret-code';
+        codeTxt.innerText = codeId;
+        container.appendChild(codeTxt);
+
+        const footer = document.createElement('p');
+        footer.innerHTML = "کۆدێ نهێنی: <br> ژێر بارکۆدی بنڤیسە";
+        container.appendChild(footer);
+
+        setTimeout(() => {
+            new QRCode(qrBox, {
+                text: gameUrl,
+                width: 120,
+                height: 120,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }, 0);
+
+        return container;
+    }
+
+    function printOne(id) {
+        const area = document.getElementById('print-area');
+        area.innerHTML = '';
+        area.appendChild(createTicketHTML(id));
+        setTimeout(() => window.print(), 300);
+    }
+
+    function printAllNew() {
+        const area = document.getElementById('print-area');
+        area.innerHTML = '';
+        const newCodes = allData.filter(x => !x.used);
+        if(newCodes.length === 0) return alert("هیچ کۆدەکێ نوی نینە!");
+
+        newCodes.forEach(item => {
+            area.appendChild(createTicketHTML(item.id));
+        });
+
+        setTimeout(() => window.print(), 500);
+    }
+</script>
+</body>
+</html>
