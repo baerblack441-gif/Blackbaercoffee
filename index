@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BlackBear Coffee - Lucky Wheel</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #c2934f;
+            --bg-dark: #121212;
+            --font-main: 'Noto Naskh Arabic', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background: radial-gradient(circle at center, #2a1b12 0%, #000000 100%);
+            min-height: 100vh; color: #fff; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* --- LANGUAGE SELECTOR --- */
+        .lang-switch { position: absolute; top: 20px; right: 20px; z-index: 150; }
+        select {
+            background: rgba(0,0,0,0.6); color: #fff; border: 1px solid var(--primary);
+            padding: 5px 10px; border-radius: 15px; outline: none; cursor: pointer;
+            font-family: var(--font-main); font-weight: bold;
+        }
+        html[dir="ltr"] .lang-switch { right: auto; left: 20px; }
+
+        /* --- INFO SECTION --- */
+        .header-info { text-align: center; margin-top: 50px; z-index: 10; padding: 0 20px; }
+        .logo-circle {
+            width: 120px; height: 120px; margin: 0 auto 15px;
+            background: #000; border: 3px solid var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            box-shadow: 0 0 25px rgba(194, 147, 79, 0.4);
+        }
+        .logo-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .brand-name { font-size: 1.8rem; font-weight: 700; color: var(--primary); margin-bottom: 5px; }
+
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px); transition: opacity 0.5s;
+        }
+        .login-box {
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            border: 1px solid #333; border-top: 4px solid var(--primary);
+            padding: 40px 30px; border-radius: 20px; text-align: center;
+            width: 90%; max-width: 400px;
+        }
+        .input-code {
+            width: 100%; padding: 15px; margin: 20px 0;
+            background: #050505; border: 2px solid #333; color: var(--primary);
+            font-size: 1.3rem; text-align: center; border-radius: 10px; outline: none;
+            text-transform: uppercase;
+        }
+        .btn-main {
+            width: 100%; padding: 12px; font-size: 1.1rem; font-weight: 700;
+            background: linear-gradient(to right, #8e6228, #c2934f);
+            color: #000; border: none; border-radius: 10px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .btn-main:disabled { filter: grayscale(1); opacity: 0.7; cursor: not-allowed; }
+
+        /* --- WHEEL AREA --- */
+        #game-screen {
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; padding: 20px 0;
+        }
+        .wheel-wrapper {
+            position: relative; width: 340px; height: 340px;
+            margin: 20px 0; filter: drop-shadow(0 0 30px rgba(0,0,0,0.8));
+        }
+        .wheel-border {
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 10px solid #1a1a1a; 
+            box-shadow: inset 0 0 20px #000, 0 0 0 4px var(--primary);
+            overflow: hidden; position: relative; background: #000;
+            /* Transition is handled in JS now */
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        /* NEEDLE - Points Down at 12 o'clock position (Visual only) */
+        .needle {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            z-index: 20; width: 50px; height: 60px;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.8));
+        }
+        .needle path { fill: #ff3b3b; stroke: #fff; stroke-width: 2px; }
+
+        .center-cap {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), #5c4217);
+            border-radius: 50%; border: 3px solid #fff; z-index: 10;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+        }
+
+        /* --- MODAL --- */
+        .result-modal {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.95); display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .result-box {
+            background: #111; border: 2px solid var(--primary);
+            padding: 40px; border-radius: 20px; text-align: center;
+            width: 85%; max-width: 400px;
+        }
+        .result-emoji { font-size: 4rem; display: block; margin-bottom: 10px; }
+        .result-text { color: var(--primary); font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="lang-switch">
+        <select id="langSelect" onchange="setLanguage(this.value)">
+            <option value="ku">Kurdish</option>
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+
+    <audio id="sound-tick" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+    <audio id="sound-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+    <audio id="sound-lose" src="https://assets.mixkit.co/active_storage/sfx/2972/2972-preview.mp3"></audio>
+
+    <div class="header-info">
+        <div class="logo-circle">
+            <img src="https://i.ibb.co/0R8bcxVD/IMG-4804.png" alt="Logo">
+        </div>
+        <div class="brand-name">BLACKBEAR COFFEE</div>
+    </div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 id="txt-welcome" style="color:var(--primary)">بەخێرهاتی</h2>
+            <p id="txt-enter-code" style="color:#aaa; font-size:0.9rem; margin-top:5px;">کۆدێ سەر پسوولێ بنڤیسە:</p>
+            <input type="text" id="codeInput" class="input-code" placeholder="CODE">
+            <button class="btn-main" id="btnCheck" onclick="verifyCode()">چوونە ژوور</button>
+            <div id="msg" style="margin-top:15px; font-weight:bold;"></div>
+        </div>
+    </div>
+
+    <div id="game-screen">
+        <div class="wheel-wrapper">
+            <svg class="needle" viewBox="0 0 50 60"><path d="M25 60 L0 0 L50 0 Z" /></svg>
+            <div class="wheel-border" id="wheel-container">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="center-cap">☕</div>
+        </div>
+        <button class="btn-main" id="spinBtn" style="width: 200px; font-size: 1.5rem; border-radius: 50px;" onclick="startSpin()">
+            بزڤرینە
+        </button>
+    </div>
+
+    <div class="result-modal" id="resultModal">
+        <div class="result-box">
+            <div class="result-emoji" id="resEmoji">🎉</div>
+            <h2 id="resTitle" style="color:#fff; margin-bottom:5px;">پیرۆزە!</h2>
+            <div class="result-text" id="resPrize">خەلات</div>
+            <button class="btn-main" onclick="closeGame()" id="btn-ok">باشە</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ==========================================
+        // 1. DATA & WEIGHTS (Updated as requested)
+        // ==========================================
+        const rawSegments = [
+            { id: 'nothing', labelKey: 'nothing', val: 'هیچ',    color: '#1a1a1a', txtCol: '#666', weight: 90 }, // 1
+            { id: 'retry',   labelKey: 'retry',   val: 'دوبارە', color: '#000000', txtCol: '#0f0', weight: 80 }, // 2
+            { id: '5off',    labelKey: null,      val: '5%',     color: '#3e2723', txtCol: '#fff', weight: 70 }, // 3
+            { id: '10off',   labelKey: null,      val: '10%',    color: '#5d4037', txtCol: '#fff', weight: 60 }, // 4
+            { id: '20off',   labelKey: null,      val: '20%',    color: '#c2934f', txtCol: '#000', weight: 25 }, // 5
+            { id: '40off',   labelKey: null,      val: '40%',    color: '#5d4037', txtCol: '#fff', weight: 20 }, // 6
+            { id: '30off',   labelKey: null,      val: '30%',    color: '#3e2723', txtCol: '#fff', weight: 17.5 },// 7
+            { id: '50off',   labelKey: null,      val: '50%',    color: '#c2934f', txtCol: '#000', weight: 5 },  // 8
+            { id: '60off',   labelKey: null,      val: '60%',    color: '#3e2723', txtCol: '#fff', weight: 4 },  // 9
+            { id: '70off',   labelKey: null,      val: '70%',    color: '#5d4037', txtCol: '#fff', weight: 3 },  // 10
+            { id: 'free',    labelKey: 'free',    val: 'بەلاش',  color: '#FFD700', txtCol: '#000', weight: 1 }   // 11
+        ];
+
+        // ==========================================
+        // 2. TRANSLATIONS
+        // ==========================================
+        const translations = {
+            ku: {
+                welcome: "بەخێرهاتی", enterCode: "کۆدێ سەر پسوولێ بنڤیسە:", loginBtn: "چوونە ژوور", checking: "د پشکنینێ دایە...", success: "سەرکەفتیانە!", errUsed: "ئەڤ کۆدە بەرێ هاتیە بکارئینان!", errWrong: "کۆد خەلەتە", errNet: "ئنتەرنێتێ بپشکنە", spinBtn: "بزڤرینە", winTitle: "پیرۆزە!", loseTitle: "خسارەت!", retryTitle: "دوبارە!", winMsg: "تە ئەڤ خەلاتە برد: ", loseMsg: "بەختێ تە یێ باش نینە", retryMsg: "جارەکا دی ب بەلاش بزڤرینە", okBtn: "باشە",
+                segments: { nothing: "هیچ", retry: "دوبارە", free: "بەلاش" }
+            },
+            en: {
+                welcome: "Welcome", enterCode: "Enter your ticket code:", loginBtn: "Login", checking: "Checking...", success: "Success!", errUsed: "Code used!", errWrong: "Invalid Code", errNet: "Check Internet", spinBtn: "SPIN", winTitle: "Congrats!", loseTitle: "Hard Luck!", retryTitle: "Retry!", winMsg: "You won: ", loseMsg: "Better luck next time", retryMsg: "Spin again free!", okBtn: "OK",
+                segments: { nothing: "Nothing", retry: "Retry", free: "Free" }
+            },
+            ar: {
+                welcome: "أهلاً بك", enterCode: "أدخل الكود:", loginBtn: "دخول", checking: "جاري التحقق...", success: "تم بنجاح!", errUsed: "الكود مستخدم!", errWrong: "كود خاطئ", errNet: "افحص الانترنت", spinBtn: "أدر العجلة", winTitle: "مبارك!", loseTitle: "حظ أوفر!", retryTitle: "أعد المحاولة!", winMsg: "لقد ربحت: ", loseMsg: "لم تربح شيئاً", retryMsg: "حاول مرة أخرى", okBtn: "حسناً",
+                segments: { nothing: "لا شيء", retry: "إعادة", free: "مجاناً" }
+            }
+        };
+
+        let curLang = 'ku';
+        function setLanguage(lang) {
+            curLang = lang;
+            const t = translations[lang];
+            document.documentElement.dir = (lang === 'en') ? "ltr" : "rtl";
+            document.getElementById('txt-welcome').innerText = t.welcome;
+            document.getElementById('txt-enter-code').innerText = t.enterCode;
+            document.getElementById('btnCheck').innerText = t.loginBtn;
+            document.getElementById('spinBtn').innerText = t.spinBtn;
+            document.getElementById('btn-ok').innerText = t.okBtn;
+            drawWheel();
+        }
+
+        // ==========================================
+        // 3. WHEEL DRAWING
+        // ==========================================
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1000; canvas.width = size; canvas.height = size;
+        const cx = size/2; const cy = size/2; const r = size/2 - 10;
+        const segmentArc = 360 / rawSegments.length; // Degrees per segment
+        const rad = (deg) => deg * (Math.PI / 180);
+
+        function drawWheel() {
+            ctx.clearRect(0,0,size,size);
+            const t = translations[curLang];
+            
+            rawSegments.forEach((seg, i) => {
+                const startAngle = i * segmentArc;
+                const endAngle = startAngle + segmentArc;
+                
+                let displayText = seg.val;
+                if(seg.labelKey) displayText = t.segments[seg.labelKey];
+
+                // Slice
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, rad(startAngle), rad(endAngle));
+                ctx.fillStyle = seg.color;
+                ctx.fill();
+                ctx.strokeStyle = "#c2934f";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Text
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rad(startAngle + segmentArc/2));
+                ctx.textAlign = "right";
+                ctx.fillStyle = seg.txtCol;
+                ctx.font = "bold 55px 'Noto Naskh Arabic'";
+                ctx.shadowColor = "rgba(0,0,0,0.8)";
+                ctx.shadowBlur = 10;
+                ctx.fillText(displayText, r - 50, 20);
+                
+                if(seg.weight < 20) {
+                    ctx.font = "30px Arial";
+                    ctx.fillText("★", r - 160, 20);
+                }
+                ctx.restore();
+            });
+        }
+
+        // ==========================================
+        // 4. LOGIC (FIXED MATH)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWs-syIgGL4f7fNZA6JdU7fgSD9S3a37U",
+            authDomain: "blackbearcoffe-808e0.firebaseapp.com",
+            projectId: "blackbearcoffe-808e0",
+            storageBucket: "blackbearcoffe-808e0.firebasestorage.app",
+            messagingSenderId: "78694014274",
+            appId: "1:78694014274:web:a1b763554cbdc807f83cdb",
+            measurementId: "G-NM3HLS4W2T"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        let currentUserCode = "";
+
+        function verifyCode() {
+            const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            const msg = document.getElementById('msg');
+            const btn = document.getElementById('btnCheck');
+            const t = translations[curLang];
+
+            if(!code) return;
+            btn.disabled = true; btn.innerText = t.checking; msg.innerText = "";
+
+            db.collection('codes').doc(code).get().then((doc) => {
+                if (doc.exists && !doc.data().used) {
+                    currentUserCode = code;
+                    msg.style.color = "#4f4"; msg.innerText = t.success;
+                    setTimeout(() => {
+                        document.getElementById('login-screen').style.opacity = 0;
+                        setTimeout(() => {
+                            document.getElementById('login-screen').style.display = 'none';
+                            document.getElementById('game-screen').style.display = 'flex';
+                            drawWheel(); 
+                        }, 500);
+                    }, 800);
+                } else {
+                    msg.style.color = "red"; msg.innerText = doc.exists ? t.errUsed : t.errWrong;
+                    btn.disabled = false; btn.innerText = t.loginBtn;
+                }
+            }).catch(() => {
+                msg.style.color = "red"; msg.innerText = t.errNet;
+                btn.disabled = false; btn.innerText = t.loginBtn;
+            });
+        }
+
+        let isSpinning = false;
+
+        function getWeightedWinner() {
+            let total = rawSegments.reduce((sum, s) => sum + s.weight, 0);
+            let random = Math.random() * total;
+            for(let i=0; i<rawSegments.length; i++) {
+                if(random < rawSegments[i].weight) return i;
+                random -= rawSegments[i].weight;
+            }
+            return 0;
+        }
+
+        function startSpin() {
+            if(isSpinning) return;
+            isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+
+            const winnerIndex = getWeightedWinner();
+            
+            // --- MATH FIX START ---
+            // 1. Find the exact degrees where this segment starts and ends on the wheel (0 to 360)
+            const segStart = winnerIndex * segmentArc;
+            const segEnd = segStart + segmentArc;
+
+            // 2. Pick a random point INSIDE this segment (with 5 degree buffer to avoid lines)
+            const randomDegreeInsideSegment = Math.floor(Math.random() * (segmentArc - 10)) + 5 + segStart;
+            
+            // 3. To bring this specific degree to the TOP (270 degrees), we need to rotate:
+            // Target Rotation = 360 * spins + (270 - angle_of_winner)
+            const spins = 10; 
+            const stopAngle = (360 * spins) + (270 - randomDegreeInsideSegment);
+
+            const wheelContainer = document.getElementById('wheel-container');
+            const duration = 10;
+            
+            wheelContainer.style.transition = `transform ${duration}s cubic-bezier(0.1, 0.8, 0.1, 1)`;
+            wheelContainer.style.transform = `rotate(${stopAngle}deg)`;
+            
+            // Sound
+            const tickSound = document.getElementById('sound-tick');
+            tickSound.volume = 0.5;
+            let tickCount = 0;
+            const tickInterval = setInterval(() => {
+                tickCount++; if(tickCount > 30) clearInterval(tickInterval);
+                tickSound.cloneNode().play().catch(e=>{});
+            }, 300);
+
+            setTimeout(() => { finalizeSpin(winnerIndex); }, duration * 1000);
+        }
+
+        function finalizeSpin(winnerIndex) {
+            const winner = rawSegments[winnerIndex];
+            const t = translations[curLang];
+            let winnerText = winner.val;
+            if(winner.labelKey) winnerText = t.segments[winner.labelKey];
+
+            const modal = document.getElementById('resultModal');
+            const emoji = document.getElementById('resEmoji');
+            const title = document.getElementById('resTitle');
+            const txt = document.getElementById('resPrize');
+
+            modal.style.display = 'flex';
+
+            if(winner.id === 'nothing') {
+                document.getElementById('sound-lose').play();
+                emoji.innerText = "😢"; title.innerText = t.loseTitle; txt.innerText = t.loseMsg; txt.style.color = "#888";
+                db.collection('codes').doc(currentUserCode).update({ used: true, prize: 'Nothing', timestamp: new Date() });
+            } else if (winner.id === 'retry') {
+                document.getElementById('sound-lose').play(); 
+                emoji.innerText = "🔄"; title.innerText = t.retryTitle; txt.innerText = t.retryMsg; txt.style.color = "#0f0";
+                isRetry = true;
+            } else {
+                document.getElementById('sound-win').play();
+                confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 }, colors: ['#c2934f', '#fff'] });
+                emoji.innerText = "🎁"; title.innerText = t.winTitle; txt.innerText = t.winMsg + winnerText; txt.style.color = "#c2934f";
+                db.collection('codes').doc(currentUserCode).update({ used: true, prize: winnerText, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+        }
+
+        let isRetry = false;
+        function closeGame() {
+            if(isRetry) location.reload();
+            else document.getElementById('resultModal').innerHTML = `<h2 style='color:#fff'>❤️ BlackBear Coffee</h2>`;
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
