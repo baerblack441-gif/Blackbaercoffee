@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Black Bear | Ultra Luxury</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@200;300;400;500;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        /* --- THE ONE MILLION DOLLAR VARIABLES --- */
+        :root {
+            --bg-deep: #050505;
+            --bg-card: #0e0e0e;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #D4AF37 0%, #AA8A26 100%);
+            --text-main: #f0f0f0;
+            --text-muted: #888888;
+            --font-ku: 'IBM Plex Sans Arabic', sans-serif;
+            --font-en: 'Cinzel', serif;
+        }
+
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; outline: none; }
+        
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-ku);
+            overflow-x: hidden;
+            padding-bottom: 100px;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        /* --- LOADING SCREEN --- */
+        .loader-wrapper {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            transition: opacity 0.8s ease;
+        }
+        .loader-logo { font-family: var(--font-en); font-size: 2rem; letter-spacing: 5px; color: var(--gold-primary); animation: pulse 2s infinite; }
+        .loader-line { width: 0; height: 1px; background: var(--gold-primary); margin-top: 10px; transition: width 1s ease; }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* --- HEADER --- */
+        .cinematic-header {
+            position: relative; height: 42vh; width: 100%;
+            overflow: hidden;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+        }
+        .video-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; filter: brightness(0.6);
+            animation: slowPan 20s infinite alternate;
+        }
+        @keyframes slowPan { from { transform: scale(1); } to { transform: scale(1.15); } }
+        
+        .header-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, var(--bg-deep) 0%, transparent 80%);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 25px;
+        }
+        
+        .brand-block h1 {
+            font-family: var(--font-en); font-size: 2.5rem; letter-spacing: 2px;
+            background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 5px; text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .brand-block p { color: #ccc; font-size: 0.9rem; letter-spacing: 0.5px; opacity: 0.9; }
+
+        /* --- STICKY NAV --- */
+        .cat-sticky {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-top: -30px;
+            border-top-left-radius: 30px; border-top-right-radius: 30px;
+        }
+        .cat-list {
+            display: flex; gap: 12px; overflow-x: auto; padding: 0 20px;
+            scrollbar-width: none;
+        }
+        .cat-list::-webkit-scrollbar { display: none; }
+
+        .cat-chip {
+            padding: 12px 24px; border-radius: 30px;
+            font-size: 0.95rem; font-weight: 500; color: #aaa;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            white-space: nowrap; cursor: pointer;
+        }
+        .cat-chip.active {
+            background: var(--gold-primary); color: #000; border-color: var(--gold-primary);
+            font-weight: 700; box-shadow: 0 0 25px rgba(212, 175, 55, 0.4); transform: scale(1.05);
+        }
+
+        /* --- GRID LAYOUT --- */
+        .menu-container { padding: 25px 20px; min-height: 400px; }
+
+        .product-card {
+            display: flex; align-items: center; gap: 15px;
+            background: var(--bg-card); padding: 12px; margin-bottom: 18px;
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);
+            position: relative; overflow: hidden; transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .product-card:active { transform: scale(0.98); }
+        .product-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--gold-primary); opacity: 0; transition: 0.3s;
+        }
+        .product-card.active-card::before { opacity: 1; }
+
+        .p-img-box {
+            width: 90px; height: 90px; flex-shrink: 0; border-radius: 16px; overflow: hidden;
+            position: relative; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .p-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        
+        .p-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .p-title {
+            font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; color: #fff;
+            letter-spacing: -0.5px;
+        }
+        .p-desc {
+            font-size: 0.8rem; color: #777; line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        
+        .p-price-box {
+            text-align: left; min-width: 75px; display: flex; flex-direction: column; align-items: flex-end;
+        }
+        .p-price {
+            font-family: var(--font-en); color: var(--gold-primary); font-weight: 700; font-size: 1.1rem;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+        .add-btn {
+            margin-top: 10px; width: 35px; height: 35px; border-radius: 50%;
+            background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center;
+            color: var(--gold-primary); font-size: 0.9rem; transition: 0.3s;
+        }
+
+        /* --- BOTTOM NAV --- */
+        .bottom-nav {
+            position: fixed; bottom: 25px; left: 25px; right: 25px;
+            background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-radius: 35px; height: 75px;
+            display: flex; justify-content: space-around; align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6); z-index: 500;
+        }
+        .nav-icon {
+            color: #555; font-size: 1.4rem; padding: 10px; transition: 0.4s;
+            position: relative; display: flex; flex-direction: column; align-items: center;
+        }
+        .nav-icon.active { color: var(--gold-primary); transform: translateY(-5px); }
+        .nav-icon.active i { filter: drop-shadow(0 0 8px var(--gold-primary)); }
+
+        /* --- FULL SCREEN MODAL --- */
+        .fs-modal {
+            position: fixed; inset: 0; background: var(--bg-deep); z-index: 2000;
+            transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex; flex-direction: column;
+        }
+        .fs-modal.open { transform: translateY(0); }
+        
+        .modal-hero { height: 50vh; position: relative; }
+        .modal-hero img { width: 100%; height: 100%; object-fit: cover; mask-image: linear-gradient(to bottom, black 70%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%); }
+        .close-fs {
+            position: absolute; top: 30px; right: 30px; width: 45px; height: 45px;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(15px); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white;
+            font-size: 1.2rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); z-index: 10;
+        }
+
+        .modal-content { padding: 35px; margin-top: -60px; position: relative; z-index: 2; }
+        .modal-category { color: var(--gold-primary); font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; display: inline-block; padding: 5px 10px; background: rgba(212, 175, 55, 0.1); border-radius: 5px; }
+        .modal-h1 { font-family: var(--font-en); font-size: 2.8rem; line-height: 1; margin-bottom: 20px; color: white; }
+        .modal-p { color: #b0b0b0; font-size: 1.1rem; line-height: 1.7; margin-bottom: 30px; font-weight: 300; }
+        
+        .modal-action {
+            margin-top: auto; padding: 25px; border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(10,10,10,0.9);
+        }
+        .price-big { font-family: var(--font-en); font-size: 2.2rem; color: white; font-weight: 700; }
+        .price-unit { font-size: 1rem; color: var(--gold-primary); margin-right: 5px; }
+        
+        .order-now-btn {
+            background: var(--gold-gradient); color: black; padding: 18px 45px;
+            border-radius: 50px; font-weight: 700; font-size: 1.1rem; border: none;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.25);
+            transition: 0.3s; cursor: pointer;
+        }
+        .order-now-btn:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2); }
+    </style>
+</head>
+<body>
+
+    <!-- LOADER -->
+    <div id="loader" class="loader-wrapper">
+        <div class="loader-logo">LUXURY</div>
+        <div class="loader-line" id="loader-line"></div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content" style="opacity: 0; transition: 1.2s ease-out;">
+        
+        <header class="cinematic-header">
+            <img src="https://images.unsplash.com/photo-1544148103-0773bf10d330?q=80&w=1920" class="video-bg" alt="Luxury Vibe">
+            <div class="header-overlay">
+                <div class="brand-block">
+                    <h1>BLACK BEAR</h1>
+                    <p>ئەزموونەکا شاهانە | Since 2024</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- STICKY FILTER: Empty initially, filled by JS -->
+        <div class="cat-sticky">
+            <div class="cat-list" id="category-wrapper">
+                <!-- Categories will appear here automatically -->
+            </div>
+        </div>
+
+        <div class="menu-container" id="menu-container">
+            <!-- Items injected by JS -->
+        </div>
+
+    </main>
+
+    <div class="bottom-nav">
+        <div class="nav-icon active"><i class="fas fa-home"></i></div>
+        <div class="nav-icon"><i class="fas fa-search"></i></div>
+        <div class="nav-icon"><i class="fas fa-shopping-bag"></i></div>
+        <div class="nav-icon" onclick="alert('WiFi: BearGold2026')"><i class="fas fa-wifi"></i></div>
+    </div>
+
+    <!-- FULL SCREEN DETAIL -->
+    <div id="fs-modal" class="fs-modal">
+        <div class="modal-hero">
+            <img id="m-img" src="">
+            <div class="close-fs" onclick="closeModal()"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="modal-content">
+            <div class="modal-category" id="m-cat-text">Signature</div>
+            <h1 id="m-title" class="modal-h1">...</h1>
+            <p id="m-desc" class="modal-p">...</p>
+        </div>
+        <div class="modal-action">
+            <div class="price-wrapper">
+                <span id="m-price" class="price-big">0</span>
+                <span class="price-unit">IQD</span>
+            </div>
+            <button class="order-now-btn">داخوازکرن</button>
+        </div>
+    </div>
+
+    <!-- FIREBASE & APP LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxcHGuFka8TpL-k6Afl7uhidGcQAl_oGA",
+            authDomain: "blackbaercoffe.firebaseapp.com",
+            projectId: "blackbaercoffe",
+            storageBucket: "blackbaercoffe.firebasestorage.app",
+            messagingSenderId: "339042366918",
+            appId: "1:339042366918:web:db15c4facef5e57d9e6ec7",
+            measurementId: "G-02YYCQ0ZZG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // GLOBAL DATA
+        let dbMenuItems = [];
+        
+        // 1. FETCH DATA
+        async function fetchProducts() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                dbMenuItems = [];
+                querySnapshot.forEach((doc) => {
+                    dbMenuItems.push({ firebaseId: doc.id, ...doc.data() });
+                });
+                
+                initApp(); // Data is ready, build the UI
+                
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('main-content').style.opacity = '1';
+                document.getElementById('menu-container').innerHTML = '<p style="color:white; text-align:center">Error loading menu. Check connection.</p>';
+            }
+        }
+
+        // 2. INIT APP (Build Categories & Remove Loader)
+        function initApp() {
+            // A. Create Dynamic Categories
+            const catContainer = document.getElementById('category-wrapper');
+            
+            // Get all unique categories from the database items
+            // We use 'Set' to remove duplicates
+            const allCats = ['all', ...new Set(dbMenuItems.map(item => item.cat))];
+            
+            catContainer.innerHTML = '';
+            
+            allCats.forEach(cat => {
+                // Determine Display Name (Kurdish or English)
+                let displayName = cat;
+                
+                // Translations for standard ones
+                if(cat === 'all') displayName = 'هەمی';
+                else if(cat === 'hot') displayName = 'گەرم';
+                else if(cat === 'cold') displayName = 'سارد';
+                else if(cat === 'dessert') displayName = 'شیرین';
+                else if(cat === 'shisha') displayName = 'نێرگیلە';
+                else {
+                    // For new categories (like "Burger"), capitalize first letter
+                    displayName = cat.charAt(0).toUpperCase() + cat.slice(1);
+                }
+
+                // Add Chip HTML
+                catContainer.innerHTML += `
+                    <div class="cat-chip ${cat === 'all' ? 'active' : ''}" onclick="setCategory('${cat}', this)">
+                        ${displayName}
+                    </div>
+                `;
+            });
+
+            // B. Render Initial Menu
+            renderMenu('all');
+            
+            // C. Remove Loader Animation
+            const line = document.getElementById('loader-line');
+            line.style.width = '120px'; 
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                document.getElementById('main-content').style.opacity = '1';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
+            }, 800);
+        }
+
+        // 3. RENDER FUNCTION
+        window.renderMenu = function(category) {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = '';
+            
+            // Filter Data
+            const filtered = category === 'all' ? dbMenuItems : dbMenuItems.filter(i => i.cat === category);
+            
+            if(filtered.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#555; margin-top:50px;">هیچ ئیتمێک نەدۆزرایەوە.</p>';
+                return;
+            }
+
+            // Create Cards
+            filtered.forEach((item, index) => {
+                const delay = index * 80;
+                container.innerHTML += `
+                <div class="product-card" onclick="openProduct('${item.firebaseId}')" style="animation: fadeInUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards ${delay}ms; opacity: 0; transform: translateY(30px);">
+                    <div class="p-img-box">
+                        <img src="${item.img}" class="p-img" loading="lazy" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                    </div>
+                    <div class="p-info">
+                        <div class="p-title">${item.name}</div>
+                        <div class="p-desc">${item.desc}</div>
+                    </div>
+                    <div class="p-price-box">
+                        <div class="p-price">${(Number(item.price)/1000).toFixed(1)}K</div>
+                        <div class="add-btn"><i class="fas fa-arrow-left" style="transform: rotate(45deg);"></i></div>
+                    </div>
+                </div>
+                `;
+            });
+        }
+
+        // 4. OPEN PRODUCT MODAL
+        window.openProduct = function(fId) {
+            const item = dbMenuItems.find(i => i.firebaseId === fId);
+            if(!item) return;
+
+            document.getElementById('m-img').src = item.img;
+            document.getElementById('m-title').innerText = item.name;
+            document.getElementById('m-desc').innerText = item.desc;
+            document.getElementById('m-price').innerText = Number(item.price).toLocaleString();
+            
+            // Display Category Name nicely
+            const cat = item.cat;
+            let displayCat = cat.toUpperCase();
+            if(cat === 'hot') displayCat = "HOT DRINKS";
+            if(cat === 'cold') displayCat = "COLD DRINKS";
+            
+            document.getElementById('m-cat-text').innerText = displayCat;
+
+            document.getElementById('fs-modal').classList.add('open');
+        }
+
+        // START
+        fetchProducts();
+
+    </script>
+
+    <!-- UI HELPERS (Non-Module) -->
+    <script>
+        function setCategory(cat, el) {
+            // Remove active class from all
+            document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+            // Add to clicked
+            el.classList.add('active');
+            
+            if (navigator.vibrate) navigator.vibrate(10);
+            
+            // Call render from module scope
+            if(window.renderMenu) window.renderMenu(cat);
+        }
+
+        function closeModal() {
+            document.getElementById('fs-modal').classList.remove('open');
+        }
+
+        // Animation Keyframes
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes fadeInUp {
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>
