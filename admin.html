@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ku" dir="rtl">
 <head>
@@ -114,32 +115,71 @@
             td::before { content: attr(data-label); color: #888; font-size: 0.9rem; }
         }
 
-        /* --- PRINT STYLES --- */
+        /* --- PRINT STYLES FOR XPRINTER (STICKER) --- */
         @media print {
+            /* Set page size to Sticker (approx 50mm x 30mm) */
+            @page {
+                size: 50mm 30mm;
+                margin: 0;
+            }
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
+            
             #print-area {
-                position: absolute; left: 0; top: 0; width: 100%;
-                background: #fff; color: #000;
-                display: flex; flex-wrap: wrap; justify-content: center;
+                position: absolute; left: 0; top: 0;
+                width: 100%; margin: 0; padding: 0;
             }
+            
             .ticket {
-                width: 300px;
-                border: 2px dashed #000;
-                margin: 10px; padding: 20px;
-                text-align: center;
-                page-break-inside: avoid;
-                display: flex; flex-direction: column; align-items: center;
+                /* Exact size for sticker */
+                width: 48mm;
+                height: 28mm;
+                page-break-after: always;
+                display: flex;
+                flex-direction: row; /* Horizontal layout works best for small height */
+                align-items: center;
+                justify-content: space-between;
+                padding: 2px 5px;
+                border: none;
+                overflow: hidden;
             }
-            .ticket h2 { margin: 0; font-size: 1.2rem; font-weight: 900; }
-            .qr-box { margin: 15px 0; }
+            
+            /* Left Side: Text */
+            .t-left {
+                flex: 1;
+                text-align: right; /* Because RTL */
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            
+            .t-left h2 { font-size: 10px; margin: 0; font-weight: 900; }
+            .t-left p { font-size: 8px; margin: 0; }
+            
             .secret-code {
+                font-family: monospace;
+                font-size: 12px;
+                font-weight: bold;
                 background: #000; color: #fff;
-                padding: 5px 15px; border-radius: 5px;
-                font-family: monospace; font-size: 1.5rem; font-weight: bold;
-                margin-top: 10px; letter-spacing: 2px;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact;
+                padding: 1px 4px;
+                border-radius: 3px;
+                margin-top: 2px;
+                display: inline-block;
+            }
+
+            /* Right Side: QR Code */
+            .qr-box {
+                width: 24mm !important;
+                height: 24mm !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Force QR image size */
+            .qr-box img {
+                width: 100% !important;
+                height: auto !important;
             }
         }
     </style>
@@ -169,12 +209,11 @@
         <button class="menu-btn" style="color:var(--danger); margin-top:20px;" onclick="location.reload()"><i class="fas fa-sign-out-alt"></i> دەرکەفتن</button>
     </div>
 
-    <!-- FORMAT BUTTON (Hidden by default) -->
+    <!-- FORMAT BUTTON -->
     <div id="btn-format-container" style="display:none;">
         <button class="btn-format" onclick="formatSystem()">
             <i class="fas fa-exclamation-triangle"></i> فۆرماتکرن (سڕینەوە)
         </button>
-        <p style="font-size:0.7rem; color:#666; margin-top:5px; text-align:center;">ئەڤ دوگمە تەنها جارەکێ دیار دبیت</p>
     </div>
 </div>
 
@@ -203,7 +242,7 @@
             </div>
         </div>
         
-        <h3 style="margin:20px 0;">دوماهیک براوە (Last Winners)</h3>
+        <h3 style="margin:20px 0;">دوماهیک ٢٠ براوە (Live)</h3>
         <div class="table-wrapper">
             <table id="recentTable"></table>
         </div>
@@ -279,7 +318,7 @@
         if(document.getElementById('adminPass').value === "admin123") {
             document.getElementById('login-overlay').style.display = "none";
             initData();
-            checkFormatStatus(); // Check if format button should show
+            checkFormatStatus();
         } else {
             document.getElementById('errorMsg').innerText = "شفرە خەلەتە";
         }
@@ -301,8 +340,9 @@
 
     function openGen() { document.getElementById('genModal').style.display='flex'; }
 
-    // --- 3. DATA LOGIC ---
+    // --- 3. DATA LOGIC (UPDATED FOR REAL-TIME SORTING) ---
     function initData() {
+        // Listening to all codes
         db.collection('codes').orderBy('createdAt', 'desc').onSnapshot(snap => {
             allData = [];
             let used = 0;
@@ -312,21 +352,19 @@
                 if(obj.used) used++;
             });
 
-            // Stats
+            // Update Stats
             document.getElementById('st-total').innerText = allData.length;
             document.getElementById('st-used').innerText = used;
             document.getElementById('st-active').innerText = allData.length - used;
 
             renderMainTable();
-            renderRecent();
+            renderRecent(); // This now updates instantly when data changes
         });
     }
 
-    // --- FORMAT / DELETE ALL LOGIC ---
-    // This checks if the system has been formatted before
+    // --- FORMAT LOGIC ---
     function checkFormatStatus() {
         db.collection('settings').doc('system_status').get().then(doc => {
-            // If the document does NOT exist, or 'formatted' is false, show the button
             if(!doc.exists || !doc.data().formatted) {
                 document.getElementById('btn-format-container').style.display = 'block';
             }
@@ -335,18 +373,13 @@
 
     async function formatSystem() {
         if(!confirm("⚠️ ئاگەهداربە!\nئەڤە دێ هەموو داتایان ژێبەت (Delete All).\nدڵنیای؟")) return;
-        
         const btnContainer = document.getElementById('btn-format-container');
         btnContainer.innerHTML = '<p style="color:yellow; text-align:center;">خەریکە...</p>';
-
         try {
-            // 1. Get all codes
             const snap = await db.collection('codes').get();
-            const batchSize = 400; // Firestore limit is 500
+            const batchSize = 400; 
             let batch = db.batch();
             let count = 0;
-
-            // 2. Add deletes to batch
             for (const doc of snap.docs) {
                 batch.delete(doc.ref);
                 count++;
@@ -356,23 +389,12 @@
                     count = 0;
                 }
             }
-            if (count > 0) {
-                await batch.commit();
-            }
-
-            // 3. Mark as formatted (So button never comes back)
-            await db.collection('settings').doc('system_status').set({
-                formatted: true,
-                formattedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            // 4. Hide button permanently
+            if (count > 0) await batch.commit();
+            await db.collection('settings').doc('system_status').set({ formatted: true });
             btnContainer.style.display = 'none';
-            alert("✅ سەرکەفت! هەموو داتا هاتنە سڕینەوە.");
-
+            alert("✅ سەرکەفت!");
         } catch (error) {
-            console.error(error);
-            alert("خەلەتەک پەیدا بوو: " + error.message);
+            alert("Error: " + error.message);
             location.reload();
         }
     }
@@ -384,7 +406,6 @@
 
         allData.forEach(item => {
             if(!item.id.includes(search)) return;
-
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td data-label="کۆد" style="font-family:monospace; font-size:1.1rem; letter-spacing:1px;">${item.id}</td>
@@ -399,15 +420,39 @@
         });
     }
 
+    // --- RECENT WINNERS (UPDATED LOGIC) ---
     function renderRecent() {
         const tbl = document.getElementById('recentTable');
-        const winners = allData.filter(d => d.used).slice(0, 5);
+        
+        // 1. Get only used codes (Winners)
+        let winners = allData.filter(d => d.used);
+
+        // 2. Sort by time (Newest first)
+        // Note: Assumes 'timestamp' is updated when user wins. If not, it uses creation time.
+        winners.sort((a, b) => {
+            // If timestamp exists, convert to seconds, else 0
+            const tA = a.timestamp ? a.timestamp.seconds : 0;
+            const tB = b.timestamp ? b.timestamp.seconds : 0;
+            return tB - tA; // Descending order
+        });
+
+        // 3. Take Top 20
+        winners = winners.slice(0, 20);
+
         if(winners.length === 0) { tbl.innerHTML = "<tr><td style='text-align:center'>...</td></tr>"; return; }
         
-        let html = `<thead><tr><th>کۆد</th><th>خەلات</th><th>کات</th></tr></thead><tbody>`;
+        let html = `<thead><tr><th>کۆد</th><th>خەلات</th><th>کات (Time)</th></tr></thead><tbody>`;
         winners.forEach(w => {
-            let t = w.timestamp ? w.timestamp.toDate().toLocaleTimeString('ku') : '-';
-            html += `<tr><td>${w.id}</td><td style="color:var(--primary)">${w.prize}</td><td dir="ltr" style="color:#777">${t}</td></tr>`;
+            let t = '-';
+            if(w.timestamp) {
+                // Format time to show HH:MM:SS
+                t = w.timestamp.toDate().toLocaleTimeString('en-US', {hour12: true, hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            }
+            html += `<tr>
+                <td style="font-family:monospace">${w.id}</td>
+                <td style="color:var(--primary)">${w.prize}</td>
+                <td dir="ltr" style="color:#777; font-size:0.85rem;">${t}</td>
+            </tr>`;
         });
         tbl.innerHTML = html + "</tbody>";
     }
@@ -421,8 +466,10 @@
         for(let i=0; i<count; i++) {
             let rand = Math.floor(Math.random()*9000)+1000;
             let id = `${pre}-${rand}`;
+            // IMPORTANT: 'timestamp' here is creation time.
+            // When user wins, make sure your game app updates 'timestamp' to now.
             batch.set(db.collection('codes').doc(id), {
-                used: false, prize: null, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                used: false, prize: null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
         batch.commit().then(() => {
@@ -432,41 +479,39 @@
     }
     function del(id) { if(confirm('Delete?')) db.collection('codes').doc(id).delete(); }
 
-    // --- 5. PRINT SYSTEM ---
+    // --- 5. PRINT SYSTEM (STICKER MODE) ---
     function createTicketHTML(codeId) {
         const gameUrl = document.getElementById('gameUrl').value;
         const container = document.createElement('div');
         container.className = 'ticket';
         
-        const header = document.createElement('div');
-        header.innerHTML = `
-            <div style="font-size:2rem;">🐻</div>
+        // Horizontal Layout: Left = Text, Right = QR
+        
+        // Left Side
+        const leftSide = document.createElement('div');
+        leftSide.className = 't-left';
+        leftSide.innerHTML = `
             <h2>BLACKBEAR</h2>
-            <p>SCAN TO PLAY</p>
+            <p style="margin-bottom:2px;">Scan Me</p>
+            <div class="secret-code">${codeId}</div>
         `;
-        container.appendChild(header);
+        container.appendChild(leftSide);
 
+        // Right Side
         const qrBox = document.createElement('div');
         qrBox.className = 'qr-box';
         container.appendChild(qrBox);
 
-        const codeTxt = document.createElement('div');
-        codeTxt.className = 'secret-code';
-        codeTxt.innerText = codeId;
-        container.appendChild(codeTxt);
-
-        const footer = document.createElement('p');
-        footer.innerHTML = "کۆدێ نهێنی: <br> ژێر بارکۆدی بنڤیسە";
-        container.appendChild(footer);
-
+        // Generate QR
         setTimeout(() => {
+            qrBox.innerHTML = ""; // Clear
             new QRCode(qrBox, {
                 text: gameUrl,
-                width: 120,
-                height: 120,
+                width: 80, // Smaller pixels for sticker
+                height: 80,
                 colorDark : "#000000",
                 colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
+                correctLevel : QRCode.CorrectLevel.L // Low correction for less density (easier to print small)
             });
         }, 0);
 
@@ -490,7 +535,7 @@
             area.appendChild(createTicketHTML(item.id));
         });
 
-        setTimeout(() => window.print(), 500);
+        setTimeout(() => window.print(), 800);
     }
 </script>
 </body>
