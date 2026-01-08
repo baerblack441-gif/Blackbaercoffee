@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Bear | Admin Panel</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-deep: #050505;
+            --bg-panel: #121212;
+            --gold-primary: #D4AF37;
+            --text-main: #f0f0f0;
+            --danger: #ff4444;
+            --success: #00C851;
+            --font-main: 'Cinzel', serif;
+            --font-body: 'IBM Plex Sans Arabic', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; font-family: var(--font-body); }
+        
+        body { background-color: var(--bg-deep); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .login-box {
+            background: var(--bg-panel); padding: 40px; border-radius: 20px;
+            width: 100%; max-width: 400px; text-align: center;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.1);
+        }
+        .login-logo { font-family: var(--font-main); font-size: 2rem; color: var(--gold-primary); margin-bottom: 30px; }
+        
+        input, select, textarea {
+            width: 100%; background: #1a1a1a; border: 1px solid #333;
+            color: white; padding: 15px; margin-bottom: 15px; border-radius: 8px;
+            font-size: 1rem; transition: 0.3s;
+        }
+        input:focus { border-color: var(--gold-primary); }
+
+        .btn-gold {
+            background: var(--gold-primary); color: #000; font-weight: bold;
+            padding: 15px; width: 100%; border: none; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; font-size: 1rem;
+        }
+        .btn-gold:hover { background: #b5952f; }
+
+        /* --- DASHBOARD --- */
+        #dashboard { display: none; height: 100vh; flex-direction: column; }
+        
+        /* Top Bar */
+        .top-bar {
+            background: var(--bg-panel); padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        .admin-title { font-family: var(--font-main); color: var(--gold-primary); font-size: 1.5rem; }
+        .logout-btn { color: #888; cursor: pointer; transition: 0.3s; }
+        .logout-btn:hover { color: var(--danger); }
+
+        /* Main Content */
+        .content-area { flex: 1; padding: 30px; overflow-y: auto; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+        .action-header { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px; 
+        }
+        .section-title { font-size: 1.8rem; font-weight: 700; }
+        
+        /* --- NEW SEARCH BAR STYLE --- */
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+        }
+        .search-wrapper input {
+            border-radius: 50px;
+            padding-left: 45px;
+            margin-bottom: 0;
+            background: #181818;
+            border: 1px solid #333;
+        }
+        .search-wrapper i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+        }
+        .search-wrapper input:focus + i { color: var(--gold-primary); }
+
+        .add-btn {
+            background: var(--gold-primary); color: black; padding: 10px 25px;
+            border-radius: 30px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px;
+            white-space: nowrap;
+        }
+
+        /* --- TABLE STYLE (LIST VIEW) --- */
+        .data-table-wrapper {
+            background: var(--bg-panel); 
+            border-radius: 15px; 
+            border: 1px solid #222;
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 600px; 
+        }
+
+        th { 
+            background: #1a1a1a; color: #888; text-align: left; padding: 15px; 
+            font-size: 0.9rem; text-transform: uppercase; 
+            white-space: nowrap; 
+        }
+        
+        td { 
+            padding: 15px; border-bottom: 1px solid #222; vertical-align: middle; 
+            white-space: nowrap; 
+        }
+
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        .item-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #333; }
+        
+        .badge {
+            padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;
+            background: rgba(255,255,255,0.1); color: #ccc; text-transform: capitalize;
+        }
+        
+        .action-icons { display: flex; gap: 15px; }
+        
+        .edit-icon { color: #3498db; cursor: pointer; font-size: 1.2rem; }
+        .delete-icon { color: var(--danger); cursor: pointer; font-size: 1.2rem; }
+        
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 5000;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal-box {
+            background: #181818; width: 90%; max-width: 500px;
+            padding: 30px; border-radius: 20px; border: 1px solid #333;
+            position: relative;
+        }
+        .modal-title { font-family: var(--font-main); font-size: 1.5rem; margin-bottom: 20px; color: var(--gold-primary); }
+        .close-modal { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #666; font-size: 1.2rem; }
+
+        .input-group { display: flex; gap: 10px; }
+        .btn-small {
+            background: #333; color: var(--gold-primary); border: 1px solid #444;
+            width: 50px; border-radius: 8px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; height: 52px; 
+            transition: 0.3s;
+        }
+        .btn-small:hover { background: #444; }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: #333; padding: 15px 25px; border-radius: 8px;
+            border-left: 4px solid var(--gold-primary);
+            transform: translateY(100px); transition: 0.4s; z-index: 6000;
+        }
+        .toast.show { transform: translateY(0); }
+        
+        /* Mobile adjustment for Search */
+        @media (max-width: 600px) {
+            .action-header { flex-direction: column; align-items: flex-start; }
+            .search-wrapper { margin: 0; width: 100%; max-width: 100%; }
+            .add-btn { width: 100%; justify-content: center; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <div class="login-logo">ADMIN PANEL</div>
+            <input type="email" id="email" placeholder="Email Address">
+            <input type="password" id="password" placeholder="Password">
+            <button class="btn-gold" onclick="login()">LOGIN</button>
+            <p id="login-error" style="color:var(--danger); margin-top:10px; font-size:0.9rem;"></p>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard">
+        <div class="top-bar">
+            <div class="admin-title">BLACK BEAR</div>
+            <div class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="action-header">
+                <div class="section-title">Menu Items</div>
+                
+                <!-- NEW SEARCH BAR -->
+                <div class="search-wrapper">
+                    <input type="text" id="table-search" placeholder="Search by name, category, or price...">
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <div class="add-btn" onclick="openModal()">
+                    <i class="fas fa-plus"></i> Add Item
+                </div>
+            </div>
+
+            <!-- THE LIST (ALL ITEMS) -->
+            <div class="data-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- JS fills this -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT MODAL -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal-box">
+            <i class="fas fa-times close-modal" onclick="closeModal()"></i>
+            <h2 class="modal-title" id="modal-heading">Add New Item</h2>
+            
+            <input type="hidden" id="edit-id"> 
+            
+            <label style="color:#777; font-size:0.85rem;">Product Name</label>
+            <input type="text" id="p-name" placeholder="e.g. Spanish Latte">
+            
+            <label style="color:#777; font-size:0.85rem;">Description</label>
+            <textarea id="p-desc" rows="3" placeholder="Description of the item..."></textarea>
+            
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1">
+                    <label style="color:#777; font-size:0.85rem;">Price (IQD)</label>
+                    <input type="number" id="p-price" placeholder="5000">
+                </div>
+                <div style="flex:1">
+                    <label style="color:#777; font-size:0.85rem;">Category</label>
+                    <div class="input-group">
+                        <select id="p-cat">
+                            <option value="" disabled selected>Select...</option>
+                            <!-- Dynamic Categories -->
+                        </select>
+                        <div class="btn-small" onclick="addNewCategory()" title="Add New Category">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <label style="color:#777; font-size:0.85rem;">Image URL</label>
+            <input type="text" id="p-img" placeholder="https://...">
+
+            <button class="btn-gold" onclick="saveProduct()" id="save-btn">SAVE ITEM</button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast">Operation Successful</div>
+
+    <!-- FIREBASE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // 1. CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxcHGuFka8TpL-k6Afl7uhidGcQAl_oGA",
+            authDomain: "blackbaercoffe.firebaseapp.com",
+            projectId: "blackbaercoffe",
+            storageBucket: "blackbaercoffe.firebasestorage.app",
+            messagingSenderId: "339042366918",
+            appId: "1:339042366918:web:db15c4facef5e57d9e6ec7",
+            measurementId: "G-02YYCQ0ZZG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let allProducts = [];
+        let allCategories = [];
+
+        // 2. AUTH LOGIC
+        window.login = async () => {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, e, p);
+            } catch (err) {
+                document.getElementById('login-error').innerText = "Login Failed: " + err.message;
+            }
+        }
+
+        window.logout = () => {
+            signOut(auth);
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'flex';
+                // Load categories first, then data
+                await loadCategories(); 
+                loadData(); 
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('dashboard').style.display = 'none';
+            }
+        });
+
+        // 3. CATEGORY LOGIC
+        async function loadCategories() {
+            try {
+                const snap = await getDocs(collection(db, "categories"));
+                allCategories = [];
+                snap.forEach(doc => allCategories.push({ id: doc.id, ...doc.data() }));
+                
+                renderCategoryDropdown();
+            } catch (error) {
+                console.error("Error loading categories", error);
+            }
+        }
+
+        function renderCategoryDropdown() {
+            const select = document.getElementById('p-cat');
+            select.innerHTML = '<option value="" disabled selected>Select...</option>';
+            
+            allCategories.sort((a,b) => a.name.localeCompare(b.name));
+
+            allCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.name;
+                opt.innerText = cat.name;
+                select.appendChild(opt);
+            });
+        }
+
+        window.addNewCategory = async () => {
+            const newCatName = prompt("Enter new category name:");
+            if(newCatName && newCatName.trim() !== "") {
+                const finalName = newCatName.trim();
+                
+                if(allCategories.find(c => c.name.toLowerCase() === finalName.toLowerCase())) {
+                    return alert("Category already exists!");
+                }
+
+                try {
+                    const docRef = await addDoc(collection(db, "categories"), { name: finalName });
+                    showToast("Category Added");
+                    allCategories.push({ id: docRef.id, name: finalName });
+                    renderCategoryDropdown();
+                    document.getElementById('p-cat').value = finalName;
+                } catch(e) {
+                    alert("Error: " + e.message);
+                }
+            }
+        }
+
+        // 4. READ PRODUCTS (LIST)
+        async function loadData() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Loading Menu...</td></tr>';
+            
+            try {
+                const snap = await getDocs(collection(db, "products"));
+                allProducts = [];
+                snap.forEach(doc => allProducts.push({ id: doc.id, ...doc.data() }));
+                // Initial render of all products
+                renderTable(allProducts);
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error loading data</td></tr>';
+            }
+        }
+
+        // --- NEW SEARCH LOGIC ---
+        const searchInput = document.getElementById('table-search');
+        
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            
+            const filteredData = allProducts.filter(item => {
+                const matchName = item.name.toLowerCase().includes(term);
+                const matchCat = (item.cat || "").toLowerCase().includes(term);
+                const matchPrice = String(item.price).includes(term);
+                return matchName || matchCat || matchPrice;
+            });
+            
+            renderTable(filteredData);
+        });
+        // -----------------------
+
+        function renderTable(dataToRender) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            if(dataToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">No items found.</td></tr>';
+                return;
+            }
+
+            // Sort: Category then Name
+            dataToRender.sort((a, b) => {
+                if(a.cat === b.cat) return a.name.localeCompare(b.name);
+                return (a.cat || "").localeCompare(b.cat || "");
+            });
+
+            dataToRender.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${item.img}" class="item-img" onerror="this.src='https://placehold.co/50x50/black/gold?text=N/A'"></td>
+                    <td style="font-weight:500; color:white;">${item.name}</td>
+                    <td><span class="badge">${item.cat}</span></td>
+                    <td style="color:var(--gold-primary);">${Number(item.price).toLocaleString()}</td>
+                    <td>
+                        <div class="action-icons">
+                            <!-- EDIT BUTTON -->
+                            <i class="fas fa-edit edit-icon" onclick="openEdit('${item.id}')" title="Edit"></i>
+                            <!-- DELETE BUTTON -->
+                            <i class="fas fa-trash delete-icon" onclick="deleteItem('${item.id}')" title="Delete"></i>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 5. CREATE AND UPDATE LOGIC
+        window.saveProduct = async () => {
+            const id = document.getElementById('edit-id').value; 
+            const btn = document.getElementById('save-btn');
+            
+            const data = {
+                name: document.getElementById('p-name').value,
+                desc: document.getElementById('p-desc').value,
+                price: Number(document.getElementById('p-price').value),
+                cat: document.getElementById('p-cat').value,
+                img: document.getElementById('p-img').value
+            };
+
+            if(!data.name || !data.price || !data.cat) return alert("Please fill Name, Price, and Category");
+
+            btn.innerText = "Saving...";
+            
+            try {
+                if(id) {
+                    await updateDoc(doc(db, "products", id), data);
+                    showToast("Item Updated Successfully!");
+                } else {
+                    await addDoc(collection(db, "products"), data);
+                    showToast("New Item Added!");
+                }
+                
+                closeModal();
+                loadData();
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.innerText = "SAVE ITEM";
+            }
+        }
+
+        // 6. DELETE LOGIC
+        window.deleteItem = async (id) => {
+            if(confirm("Are you sure you want to delete this item?")) {
+                try {
+                    await deleteDoc(doc(db, "products", id));
+                    showToast("Item Deleted");
+                    loadData();
+                } catch(e) {
+                    alert("Error deleting: " + e.message);
+                }
+            }
+        }
+
+        // 7. HELPER FUNCTIONS (UI)
+        window.openModal = () => {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-desc').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-img').value = '';
+            document.getElementById('p-cat').value = '';
+            
+            document.getElementById('modal-heading').innerText = "Add New Item";
+            document.getElementById('product-modal').classList.add('active');
+        }
+
+        window.openEdit = (id) => {
+            const item = allProducts.find(i => i.id === id);
+            if(!item) return;
+
+            document.getElementById('edit-id').value = id;
+            document.getElementById('p-name').value = item.name;
+            document.getElementById('p-desc').value = item.desc;
+            document.getElementById('p-price').value = item.price;
+            document.getElementById('p-img').value = item.img;
+            document.getElementById('p-cat').value = item.cat;
+            
+            document.getElementById('modal-heading').innerText = "Edit Item";
+            document.getElementById('product-modal').classList.add('active');
+        }
+
+        window.closeModal = () => {
+            document.getElementById('product-modal').classList.remove('active');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        document.getElementById('product-modal').addEventListener('click', (e) => {
+            if(e.target === document.getElementById('product-modal')) closeModal();
+        });
+
+    </script>
+</body>
+</html>
